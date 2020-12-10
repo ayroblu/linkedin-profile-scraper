@@ -42,6 +42,10 @@
     "typescript": "^3.9.6",
     "typescript-tslint-plugin": "^0.5.5"
   },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true
+  },
   "release-it": {
     "git": {
       "commit": true,

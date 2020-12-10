@@ -1,15 +1,15 @@
-import puppeteer, { Page, Browser } from 'puppeteer'
+import puppeteer, { Page, Browser } from 'puppeteer';
 import treeKill from 'tree-kill';
 
 import blockedHostsList from './blocked-hosts';
 
-import { getDurationInDays, formatDate, getCleanText, getLocationFromText, statusLog, getHostname } from './utils'
+import { getDurationInDays, formatDate, getCleanText, getLocationFromText, statusLog, getHostname } from './utils';
 import { SessionExpired } from './errors';
 
 export interface Location {
   city: string | null;
   province: string | null;
-  country: string | null
+  country: string | null;
 }
 
 interface RawProfile {
@@ -98,38 +98,38 @@ interface ScraperUserDefinedOptions {
   /**
    * The LinkedIn `li_at` session cookie value. Get this value by logging in to LinkedIn with the account you want to use for scraping.
    * Open your browser's Dev Tools and find the cookie with the name `li_at`. Use that value here.
-   * 
-   * This script uses a known session cookie of a successful login into LinkedIn, instead of an e-mail and password to set you logged in. 
+   *
+   * This script uses a known session cookie of a successful login into LinkedIn, instead of an e-mail and password to set you logged in.
    * I did this because LinkedIn has security measures by blocking login requests from unknown locations or requiring you to fill in Captcha's upon login.
-   * So, if you run this from a server and try to login with an e-mail address and password, your login could be blocked. 
+   * So, if you run this from a server and try to login with an e-mail address and password, your login could be blocked.
    * By using a known session, we prevent this from happening and allows you to use this scraper on any server on any location.
-   * 
+   *
    * You probably need to get a new session cookie value when the scraper logs show it's not logged in anymore.
    */
   sessionCookieValue: string;
   /**
    * Set to true if you want to keep the scraper session alive. This results in faster recurring scrapes.
    * But keeps your memory usage high.
-   * 
+   *
    * Default: `false`
    */
   keepAlive?: boolean;
   /**
    * Set a custom user agent if you like.
-   * 
+   *
    * Default: `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36`
    */
   userAgent?: string;
   /**
-   * Use a custom timeout to set the maximum time you want to wait for the scraper 
+   * Use a custom timeout to set the maximum time you want to wait for the scraper
    * to do his job.
-   * 
+   *
    * Default: `10000` (10 seconds)
    */
   timeout?: number;
   /**
    * Start the scraper in headless mode, or not.
-   * 
+   *
    * Default: `true`
    */
   headless?: boolean;
@@ -167,9 +167,10 @@ export class LinkedInProfileScraper {
     sessionCookieValue: '',
     keepAlive: false,
     timeout: 10000,
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36',
-    headless: true
-  }
+    userAgent:
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36',
+    headless: true,
+  };
 
   private browser: Browser | null = null;
 
@@ -180,11 +181,11 @@ export class LinkedInProfileScraper {
     if (!userDefinedOptions.sessionCookieValue) {
       throw new Error(`${errorPrefix} Option "sessionCookieValue" is required.`);
     }
-    
+
     if (userDefinedOptions.sessionCookieValue && typeof userDefinedOptions.sessionCookieValue !== 'string') {
       throw new Error(`${errorPrefix} Option "sessionCookieValue" needs to be a string.`);
     }
-    
+
     if (userDefinedOptions.userAgent && typeof userDefinedOptions.userAgent !== 'string') {
       throw new Error(`${errorPrefix} Option "userAgent" needs to be a string.`);
     }
@@ -192,11 +193,11 @@ export class LinkedInProfileScraper {
     if (userDefinedOptions.keepAlive !== undefined && typeof userDefinedOptions.keepAlive !== 'boolean') {
       throw new Error(`${errorPrefix} Option "keepAlive" needs to be a boolean.`);
     }
-   
+
     if (userDefinedOptions.timeout !== undefined && typeof userDefinedOptions.timeout !== 'number') {
       throw new Error(`${errorPrefix} Option "timeout" needs to be a number.`);
     }
-    
+
     if (userDefinedOptions.headless !== undefined && typeof userDefinedOptions.headless !== 'boolean') {
       throw new Error(`${errorPrefix} Option "headless" needs to be a boolean.`);
     }
@@ -210,10 +211,10 @@ export class LinkedInProfileScraper {
    * Method to load Puppeteer in memory so we can re-use the browser instance.
    */
   public setup = async () => {
-    const logSection = 'setup'
+    const logSection = 'setup';
 
     try {
-      statusLog(logSection, `Launching puppeteer in the ${this.options.headless ? 'background' : 'foreground'}...`)
+      statusLog(logSection, `Launching puppeteer in the ${this.options.headless ? 'background' : 'foreground'}...`);
 
       this.browser = await puppeteer.launch({
         headless: this.options.headless,
@@ -263,23 +264,23 @@ export class LinkedInProfileScraper {
           '--no-zygote',
           '--password-store=basic',
           '--use-gl=swiftshader',
-          '--use-mock-keychain'
+          '--use-mock-keychain',
         ],
-        timeout: this.options.timeout
-      })
+        timeout: this.options.timeout,
+      });
 
-      statusLog(logSection, 'Puppeteer launched!')
+      statusLog(logSection, 'Puppeteer launched!');
 
       await this.checkIfLoggedIn();
 
-      statusLog(logSection, 'Done!')
+      statusLog(logSection, 'Done!');
     } catch (err) {
       // Kill Puppeteer
       await this.close();
 
-      statusLog(logSection, 'An error occurred during setup.')
+      statusLog(logSection, 'An error occurred during setup.');
 
-      throw err
+      throw err;
     }
   };
 
@@ -287,7 +288,7 @@ export class LinkedInProfileScraper {
    * Create a Puppeteer page with some extra settings to speed up the crawling process.
    */
   private createPage = async (): Promise<Page> => {
-    const logSection = 'setup page'
+    const logSection = 'setup page';
 
     if (!this.browser) {
       throw new Error('Browser not set.');
@@ -296,9 +297,8 @@ export class LinkedInProfileScraper {
     // Important: Do not block "stylesheet", makes the crawler not work for LinkedIn
     const blockedResources = ['image', 'media', 'font', 'texttrack', 'object', 'beacon', 'csp_report', 'imageset'];
 
+    const page = await this.browser.newPage();
     try {
-      const page = await this.browser.newPage()
-
       // Use already open page
       // This makes sure we don't have an extra open tab consuming memory
       const firstPage = (await this.browser.pages())[0];
@@ -306,29 +306,32 @@ export class LinkedInProfileScraper {
 
       // Method to create a faster Page
       // From: https://github.com/shirshak55/scrapper-tools/blob/master/src/fastPage/index.ts#L113
-      const session = await page.target().createCDPSession()
-      await page.setBypassCSP(true)
+      const session = await page.target().createCDPSession();
+      await page.setBypassCSP(true);
       await session.send('Page.enable');
       await session.send('Page.setWebLifecycleState', {
         state: 'active',
       });
 
-      statusLog(logSection, `Blocking the following resources: ${blockedResources.join(', ')}`)
+      statusLog(logSection, `Blocking the following resources: ${blockedResources.join(', ')}`);
 
       // A list of hostnames that are trackers
       // By blocking those requests we can speed up the crawling
       // This is kinda what a normal adblocker does, but really simple
       const blockedHosts = this.getBlockedHosts();
-      const blockedResourcesByHost = ['script', 'xhr', 'fetch', 'document']
+      const blockedResourcesByHost = ['script', 'xhr', 'fetch', 'document'];
 
-      statusLog(logSection, `Should block scripts from ${Object.keys(blockedHosts).length} unwanted hosts to speed up the crawling.`);
+      statusLog(
+        logSection,
+        `Should block scripts from ${Object.keys(blockedHosts).length} unwanted hosts to speed up the crawling.`
+      );
 
       // Block loading of resources, like images and css, we dont need that
       await page.setRequestInterception(true);
 
       page.on('request', (req) => {
         if (blockedResources.includes(req.resourceType())) {
-          return req.abort()
+          return req.abort();
         }
 
         const hostname = getHostname(req.url());
@@ -339,44 +342,44 @@ export class LinkedInProfileScraper {
           return req.abort();
         }
 
-        return req.continue()
-      })
+        return req.continue();
+      });
 
-      await page.setUserAgent(this.options.userAgent)
+      await page.setUserAgent(this.options.userAgent);
 
       await page.setViewport({
         width: 1200,
-        height: 720
-      })
+        height: 720,
+      });
 
-      statusLog(logSection, `Setting session cookie using cookie: ${process.env.LINKEDIN_SESSION_COOKIE_VALUE}`)
+      statusLog(logSection, `Setting session cookie using cookie: ${process.env.LINKEDIN_SESSION_COOKIE_VALUE}`);
 
       await page.setCookie({
-        'name': 'li_at',
-        'value': this.options.sessionCookieValue,
-        'domain': '.www.linkedin.com'
-      })
+        name: 'li_at',
+        value: this.options.sessionCookieValue,
+        domain: '.www.linkedin.com',
+      });
 
-      statusLog(logSection, 'Session cookie set!')
+      statusLog(logSection, 'Session cookie set!');
 
-      statusLog(logSection, 'Done!')
+      statusLog(logSection, 'Done!');
 
       return page;
     } catch (err) {
       // Kill Puppeteer
       await this.close();
 
-      statusLog(logSection, 'An error occurred during page setup.')
-      statusLog(logSection, err.message)
+      statusLog(logSection, 'An error occurred during page setup.');
+      statusLog(logSection, err.message);
 
-      throw err
+      throw err;
     }
   };
 
   /**
    * Method to block know hosts that have some kind of tracking.
    * By blocking those hosts we speed up the crawling.
-   * 
+   *
    * More info: http://winhelp2002.mvps.org/hosts.htm
    */
   private getBlockedHosts = (): object => {
@@ -403,11 +406,11 @@ export class LinkedInProfileScraper {
       'tags.tiqcdn.com': true,
       'dev.visualwebsiteoptimizer.com': true,
       'smartlock.google.com': true,
-      'cdn.embedly.com': true
-    }
+      'cdn.embedly.com': true,
+    };
 
     return blockedHostsObject;
-  }
+  };
 
   /**
    * Method to complete kill any Puppeteer process still active.
@@ -423,7 +426,7 @@ export class LinkedInProfileScraper {
           await page.close();
           statusLog(loggerPrefix, 'Closed page!');
         } catch (err) {
-          reject(err)
+          reject(err);
         }
       }
 
@@ -446,7 +449,7 @@ export class LinkedInProfileScraper {
               }
 
               statusLog(loggerPrefix, `Killed browser pid: ${browserProcessPid} Closed browser.`);
-              resolve()
+              resolve();
             });
           }
         } catch (err) {
@@ -454,10 +457,9 @@ export class LinkedInProfileScraper {
         }
       }
 
-      return resolve()
-    })
-
-  }
+      return resolve();
+    });
+  };
 
   /**
    * Simple method to check if the session is still active.
@@ -467,28 +469,29 @@ export class LinkedInProfileScraper {
 
     const page = await this.createPage();
 
-    statusLog(logSection, 'Checking if we are still logged in...')
+    statusLog(logSection, 'Checking if we are still logged in...');
 
     // Go to the login page of LinkedIn
     // If we do not get redirected and stay on /login, we are logged out
     // If we get redirect to /feed, we are logged in
     await page.goto('https://www.linkedin.com/login', {
       waitUntil: 'networkidle2',
-      timeout: this.options.timeout
-    })
+      timeout: this.options.timeout,
+    });
 
-    const url = page.url()
+    const url = page.url();
 
-    const isLoggedIn = !url.endsWith('/login')
+    const isLoggedIn = !url.endsWith('/login');
 
     await page.close();
 
     if (isLoggedIn) {
-      statusLog(logSection, 'All good. We are still logged in.')
+      statusLog(logSection, 'All good. We are still logged in.');
     } else {
-      const errorMessage = 'Bad news, we are not logged in! Your session seems to be expired. Use your browser to login again with your LinkedIn credentials and extract the "li_at" cookie value for the "sessionCookieValue" option.';
-      statusLog(logSection, errorMessage)
-      throw new SessionExpired(errorMessage)
+      const errorMessage =
+        'Bad news, we are not logged in! Your session seems to be expired. Use your browser to login again with your LinkedIn credentials and extract the "li_at" cookie value for the "sessionCookieValue" option.';
+      statusLog(logSection, errorMessage);
+      throw new SessionExpired(errorMessage);
     }
   };
 
@@ -496,42 +499,45 @@ export class LinkedInProfileScraper {
    * Method to scrape a user profile.
    */
   public run = async (profileUrl: string) => {
-    const logSection = 'run'
+    const logSection = 'run';
 
     const scraperSessionId = new Date().getTime();
 
     if (!this.browser) {
-      throw new Error('Browser is not set. Please run the setup method first.')
+      throw new Error('Browser is not set. Please run the setup method first.');
     }
 
     if (!profileUrl) {
-      throw new Error('No profileUrl given.')
+      throw new Error('No profileUrl given.');
     }
 
     if (!profileUrl.includes('linkedin.com/')) {
-      throw new Error('The given URL to scrape is not a linkedin.com url.')
+      throw new Error('The given URL to scrape is not a linkedin.com url.');
     }
 
+    // Eeach run has it's own page
+    const page = await this.createPage();
     try {
-      // Eeach run has it's own page
-      const page = await this.createPage();
-
-      statusLog(logSection, `Navigating to LinkedIn profile: ${profileUrl}`, scraperSessionId)
+      statusLog(logSection, `Navigating to LinkedIn profile: ${profileUrl}`, scraperSessionId);
 
       await page.goto(profileUrl, {
-        // Use "networkidl2" here and not "domcontentloaded". 
+        // Use "networkidl2" here and not "domcontentloaded".
         // As with "domcontentloaded" some elements might not be loaded correctly, resulting in missing data.
         waitUntil: 'networkidle2',
-        timeout: this.options.timeout
+        timeout: this.options.timeout,
       });
 
-      statusLog(logSection, 'LinkedIn profile page loaded!', scraperSessionId)
+      statusLog(logSection, 'LinkedIn profile page loaded!', scraperSessionId);
 
-      statusLog(logSection, 'Getting all the LinkedIn profile data by scrolling the page to the bottom, so all the data gets loaded into the page...', scraperSessionId)
+      statusLog(
+        logSection,
+        'Getting all the LinkedIn profile data by scrolling the page to the bottom, so all the data gets loaded into the page...',
+        scraperSessionId
+      );
 
       await autoScroll(page);
 
-      statusLog(logSection, 'Parsing data...', scraperSessionId)
+      statusLog(logSection, 'Parsing data...', scraperSessionId);
 
       // Only click the expanding buttons when they exist
       const expandButtonsSelectors = [
@@ -541,63 +547,77 @@ export class LinkedInProfileScraper {
         '.pv-skill-categories-section [data-control-name="skill_details"]', // Skills
       ];
 
-      const seeMoreButtonsSelectors = ['.pv-entity__description .lt-line-clamp__line.lt-line-clamp__line--last .lt-line-clamp__more[href="#"]', '.lt-line-clamp__more[href="#"]:not(.lt-line-clamp__ellipsis--dummy)']
+      const seeMoreButtonsSelectors = [
+        '.pv-entity__description .lt-line-clamp__line.lt-line-clamp__line--last .lt-line-clamp__more[href="#"]',
+        '.lt-line-clamp__more[href="#"]:not(.lt-line-clamp__ellipsis--dummy)',
+      ];
 
-      statusLog(logSection, 'Expanding all sections by clicking their "See more" buttons', scraperSessionId)
+      statusLog(logSection, 'Expanding all sections by clicking their "See more" buttons', scraperSessionId);
 
       for (const buttonSelector of expandButtonsSelectors) {
         try {
-          if (await page.$(buttonSelector) !== null) {
-            statusLog(logSection, `Clicking button ${buttonSelector}`, scraperSessionId)
+          if ((await page.$(buttonSelector)) !== null) {
+            statusLog(logSection, `Clicking button ${buttonSelector}`, scraperSessionId);
             await page.click(buttonSelector);
           }
         } catch (err) {
-          statusLog(logSection, `Could not find or click expand button selector "${buttonSelector}". So we skip that one.`, scraperSessionId)
+          statusLog(
+            logSection,
+            `Could not find or click expand button selector "${buttonSelector}". So we skip that one.`,
+            scraperSessionId
+          );
         }
       }
-      
 
       // To give a little room to let data appear. Setting this to 0 might result in "Node is detached from document" errors
       await page.waitFor(100);
 
-      statusLog(logSection, 'Expanding all descriptions by clicking their "See more" buttons', scraperSessionId)
+      statusLog(logSection, 'Expanding all descriptions by clicking their "See more" buttons', scraperSessionId);
 
       for (const seeMoreButtonSelector of seeMoreButtonsSelectors) {
-        const buttons = await page.$$(seeMoreButtonSelector)
+        const buttons = await page.$$(seeMoreButtonSelector);
 
         for (const button of buttons) {
           if (button) {
             try {
-              statusLog(logSection, `Clicking button ${seeMoreButtonSelector}`, scraperSessionId)
-              await button.click()
+              statusLog(logSection, `Clicking button ${seeMoreButtonSelector}`, scraperSessionId);
+              await button.click();
             } catch (err) {
-              statusLog(logSection, `Could not find or click see more button selector "${button}". So we skip that one.`, scraperSessionId)
+              statusLog(
+                logSection,
+                `Could not find or click see more button selector "${button}". So we skip that one.`,
+                scraperSessionId
+              );
             }
           }
         }
       }
 
-      statusLog(logSection, 'Parsing profile data...', scraperSessionId)
+      statusLog(logSection, 'Parsing profile data...', scraperSessionId);
 
       const rawUserProfileData: RawProfile = await page.evaluate(() => {
-        const profileSection = document.querySelector('.pv-top-card')
+        const profileSection = document.querySelector('.pv-top-card');
 
-        const url = window.location.href
+        const url = window.location.href;
 
-        const fullNameElement = profileSection?.querySelector('.pv-top-card--list li:first-child')
-        const fullName = fullNameElement?.textContent || null
+        const fullNameElement = profileSection?.querySelector('.pv-top-card--list li:first-child');
+        const fullName = fullNameElement?.textContent || null;
 
-        const titleElement = profileSection?.querySelector('h2')
-        const title = titleElement?.textContent || null
+        const titleElement = profileSection?.querySelector('h2');
+        const title = titleElement?.textContent || null;
 
-        const locationElement = profileSection?.querySelector('.pv-top-card--list.pv-top-card--list-bullet.mt1 li:first-child')
-        const location = locationElement?.textContent || null
+        const locationElement = profileSection?.querySelector(
+          '.pv-top-card--list.pv-top-card--list-bullet.mt1 li:first-child'
+        );
+        const location = locationElement?.textContent || null;
 
-        const photoElement = profileSection?.querySelector('.pv-top-card__photo') || profileSection?.querySelector('.profile-photo-edit__preview')
-        const photo = photoElement?.getAttribute('src') || null
+        const photoElement =
+          profileSection?.querySelector('.pv-top-card__photo') ||
+          profileSection?.querySelector('.profile-photo-edit__preview');
+        const photo = photoElement?.getAttribute('src') || null;
 
-        const descriptionElement = document.querySelector('.pv-about__summary-text .lt-line-clamp__raw-line') // Is outside "profileSection"
-        const description = descriptionElement?.textContent || null
+        const descriptionElement = document.querySelector('.pv-about__summary-text .lt-line-clamp__raw-line'); // Is outside "profileSection"
+        const description = descriptionElement?.textContent || null;
 
         return {
           fullName,
@@ -605,9 +625,9 @@ export class LinkedInProfileScraper {
           location,
           photo,
           description,
-          url
-        } as RawProfile
-      })
+          url,
+        } as RawProfile;
+      });
 
       // Convert the raw data to clean data using our utils
       // So we don't have to inject our util methods inside the browser context, which is too damn difficult using TypeScript
@@ -617,39 +637,42 @@ export class LinkedInProfileScraper {
         title: getCleanText(rawUserProfileData.title),
         location: rawUserProfileData.location ? getLocationFromText(rawUserProfileData.location) : null,
         description: getCleanText(rawUserProfileData.description),
-      }
+      };
 
-      statusLog(logSection, `Got user profile data: ${JSON.stringify(userProfile)}`, scraperSessionId)
+      statusLog(logSection, `Got user profile data: ${JSON.stringify(userProfile)}`, scraperSessionId);
 
-      statusLog(logSection, `Parsing experiences data...`, scraperSessionId)
+      statusLog(logSection, `Parsing experiences data...`, scraperSessionId);
 
       const rawExperiencesData: RawExperience[] = await page.$$eval('#experience-section ul > .ember-view', (nodes) => {
-        let data: RawExperience[] = []
+        let data: RawExperience[] = [];
 
         // Using a for loop so we can use await inside of it
         for (const node of nodes) {
           const titleElement = node.querySelector('h3');
-          const title = titleElement?.textContent || null
+          const title = titleElement?.textContent || null;
 
           const employmentTypeElement = node.querySelector('span.pv-entity__secondary-title');
-          const employmentType = employmentTypeElement?.textContent || null
+          const employmentType = employmentTypeElement?.textContent || null;
 
           const companyElement = node.querySelector('.pv-entity__secondary-title');
-          const companyElementClean = companyElement && companyElement?.querySelector('span') ? companyElement?.removeChild(companyElement.querySelector('span') as Node) && companyElement : companyElement || null;
-          const company = companyElementClean?.textContent || null
+          const companyElementClean =
+            companyElement && companyElement?.querySelector('span')
+              ? companyElement?.removeChild(companyElement.querySelector('span') as Node) && companyElement
+              : companyElement || null;
+          const company = companyElementClean?.textContent || null;
 
           const descriptionElement = node.querySelector('.pv-entity__description');
-          const description = descriptionElement?.textContent || null
+          const description = descriptionElement?.textContent || null;
 
           const dateRangeElement = node.querySelector('.pv-entity__date-range span:nth-child(2)');
-          const dateRangeText = dateRangeElement?.textContent || null
+          const dateRangeText = dateRangeElement?.textContent || null;
 
           const startDatePart = dateRangeText?.split('–')[0] || null;
           const startDate = startDatePart?.trim() || null;
 
           const endDatePart = dateRangeText?.split('–')[1] || null;
           const endDateIsPresent = endDatePart?.trim().toLowerCase() === 'present' || false;
-          const endDate = (endDatePart && !endDateIsPresent) ? endDatePart.trim() : 'Present';
+          const endDate = endDatePart && !endDateIsPresent ? endDatePart.trim() : 'Present';
 
           const locationElement = node.querySelector('.pv-entity__location span:nth-child(2)');
           const location = locationElement?.textContent || null;
@@ -662,8 +685,8 @@ export class LinkedInProfileScraper {
             startDate,
             endDate,
             endDateIsPresent,
-            description
-          })
+            description,
+          });
         }
 
         return data;
@@ -676,8 +699,10 @@ export class LinkedInProfileScraper {
         const endDate = formatDate(rawExperience.endDate) || null;
         const endDateIsPresent = rawExperience.endDateIsPresent;
 
-        const durationInDaysWithEndDate = (startDate && endDate && !endDateIsPresent) ? getDurationInDays(startDate, endDate) : null
-        const durationInDaysForPresentDate = (endDateIsPresent && startDate) ? getDurationInDays(startDate, new Date()) : null
+        const durationInDaysWithEndDate =
+          startDate && endDate && !endDateIsPresent ? getDurationInDays(startDate, endDate) : null;
+        const durationInDaysForPresentDate =
+          endDateIsPresent && startDate ? getDurationInDays(startDate, new Date()) : null;
         const durationInDays = endDateIsPresent ? durationInDaysForPresentDate : durationInDaysWithEndDate;
 
         return {
@@ -690,20 +715,19 @@ export class LinkedInProfileScraper {
           endDate,
           endDateIsPresent,
           durationInDays,
-          description: getCleanText(rawExperience.description)
-        }
-      })
+          description: getCleanText(rawExperience.description),
+        };
+      });
 
-      statusLog(logSection, `Got experiences data: ${JSON.stringify(experiences)}`, scraperSessionId)
+      statusLog(logSection, `Got experiences data: ${JSON.stringify(experiences)}`, scraperSessionId);
 
-      statusLog(logSection, `Parsing education data...`, scraperSessionId)
+      statusLog(logSection, `Parsing education data...`, scraperSessionId);
 
       const rawEducationData: RawEducation[] = await page.$$eval('#education-section ul > .ember-view', (nodes) => {
         // Note: the $$eval context is the browser context.
         // So custom methods you define in this file are not available within this $$eval.
-        let data: RawEducation[] = []
+        let data: RawEducation[] = [];
         for (const node of nodes) {
-
           const schoolNameElement = node.querySelector('h3.pv-entity__school-name');
           const schoolName = schoolNameElement?.textContent || null;
 
@@ -718,29 +742,29 @@ export class LinkedInProfileScraper {
 
           const dateRangeElement = node.querySelectorAll('.pv-entity__dates time');
 
-          const startDatePart = dateRangeElement && dateRangeElement[0]?.textContent || null;
-          const startDate = startDatePart || null
+          const startDatePart = (dateRangeElement && dateRangeElement[0]?.textContent) || null;
+          const startDate = startDatePart || null;
 
-          const endDatePart = dateRangeElement && dateRangeElement[1]?.textContent || null;
-          const endDate = endDatePart || null
+          const endDatePart = (dateRangeElement && dateRangeElement[1]?.textContent) || null;
+          const endDate = endDatePart || null;
 
           data.push({
             schoolName,
             degreeName,
             fieldOfStudy,
             startDate,
-            endDate
-          })
+            endDate,
+          });
         }
 
-        return data
+        return data;
       });
 
       // Convert the raw data to clean data using our utils
       // So we don't have to inject our util methods inside the browser context, which is too damn difficult using TypeScript
-      const education: Education[] = rawEducationData.map(rawEducation => {
-        const startDate = formatDate(rawEducation.startDate)
-        const endDate = formatDate(rawEducation.endDate)
+      const education: Education[] = rawEducationData.map((rawEducation) => {
+        const startDate = formatDate(rawEducation.startDate);
+        const endDate = formatDate(rawEducation.endDate);
 
         return {
           ...rawEducation,
@@ -750,55 +774,57 @@ export class LinkedInProfileScraper {
           startDate,
           endDate,
           durationInDays: getDurationInDays(startDate, endDate),
-        }
-      })
-
-      statusLog(logSection, `Got education data: ${JSON.stringify(education)}`, scraperSessionId)
-
-      statusLog(logSection, `Parsing volunteer experience data...`, scraperSessionId)
-
-      const rawVolunteerExperiences: RawVolunteerExperience[] = await page.$$eval('.pv-profile-section.volunteering-section ul > li.ember-view', (nodes) => {
-        // Note: the $$eval context is the browser context.
-        // So custom methods you define in this file are not available within this $$eval.
-        let data: RawVolunteerExperience[] = []
-        for (const node of nodes) {
-
-          const titleElement = node.querySelector('.pv-entity__summary-info h3');
-          const title = titleElement?.textContent || null;
-          
-          const companyElement = node.querySelector('.pv-entity__summary-info span.pv-entity__secondary-title');
-          const company = companyElement?.textContent || null;
-
-          const dateRangeElement = node.querySelector('.pv-entity__date-range span:nth-child(2)');
-          const dateRangeText = dateRangeElement?.textContent || null
-          const startDatePart = dateRangeText?.split('–')[0] || null;
-          const startDate = startDatePart?.trim() || null;
-
-          const endDatePart = dateRangeText?.split('–')[1] || null;
-          const endDateIsPresent = endDatePart?.trim().toLowerCase() === 'present' || false;
-          const endDate = (endDatePart && !endDateIsPresent) ? endDatePart.trim() : 'Present';
-
-          const descriptionElement = node.querySelector('.pv-entity__description')
-          const description = descriptionElement?.textContent || null;
-
-          data.push({
-            title,
-            company,
-            startDate,
-            endDate,
-            endDateIsPresent,
-            description
-          })
-        }
-
-        return data
+        };
       });
+
+      statusLog(logSection, `Got education data: ${JSON.stringify(education)}`, scraperSessionId);
+
+      statusLog(logSection, `Parsing volunteer experience data...`, scraperSessionId);
+
+      const rawVolunteerExperiences: RawVolunteerExperience[] = await page.$$eval(
+        '.pv-profile-section.volunteering-section ul > li.ember-view',
+        (nodes) => {
+          // Note: the $$eval context is the browser context.
+          // So custom methods you define in this file are not available within this $$eval.
+          let data: RawVolunteerExperience[] = [];
+          for (const node of nodes) {
+            const titleElement = node.querySelector('.pv-entity__summary-info h3');
+            const title = titleElement?.textContent || null;
+
+            const companyElement = node.querySelector('.pv-entity__summary-info span.pv-entity__secondary-title');
+            const company = companyElement?.textContent || null;
+
+            const dateRangeElement = node.querySelector('.pv-entity__date-range span:nth-child(2)');
+            const dateRangeText = dateRangeElement?.textContent || null;
+            const startDatePart = dateRangeText?.split('–')[0] || null;
+            const startDate = startDatePart?.trim() || null;
+
+            const endDatePart = dateRangeText?.split('–')[1] || null;
+            const endDateIsPresent = endDatePart?.trim().toLowerCase() === 'present' || false;
+            const endDate = endDatePart && !endDateIsPresent ? endDatePart.trim() : 'Present';
+
+            const descriptionElement = node.querySelector('.pv-entity__description');
+            const description = descriptionElement?.textContent || null;
+
+            data.push({
+              title,
+              company,
+              startDate,
+              endDate,
+              endDateIsPresent,
+              description,
+            });
+          }
+
+          return data;
+        }
+      );
 
       // Convert the raw data to clean data using our utils
       // So we don't have to inject our util methods inside the browser context, which is too damn difficult using TypeScript
-      const volunteerExperiences: VolunteerExperience[] = rawVolunteerExperiences.map(rawVolunteerExperience => {
-        const startDate = formatDate(rawVolunteerExperience.startDate)
-        const endDate = formatDate(rawVolunteerExperience.endDate)
+      const volunteerExperiences: VolunteerExperience[] = rawVolunteerExperiences.map((rawVolunteerExperience) => {
+        const startDate = formatDate(rawVolunteerExperience.startDate);
+        const endDate = formatDate(rawVolunteerExperience.endDate);
 
         return {
           ...rawVolunteerExperience,
@@ -808,14 +834,14 @@ export class LinkedInProfileScraper {
           startDate,
           endDate,
           durationInDays: getDurationInDays(startDate, endDate),
-        }
-      })
+        };
+      });
 
-      statusLog(logSection, `Got volunteer experience data: ${JSON.stringify(volunteerExperiences)}`, scraperSessionId)
+      statusLog(logSection, `Got volunteer experience data: ${JSON.stringify(volunteerExperiences)}`, scraperSessionId);
 
-      statusLog(logSection, `Parsing skills data...`, scraperSessionId)
+      statusLog(logSection, `Parsing skills data...`, scraperSessionId);
 
-      const skills: Skill[] = await page.$$eval('.pv-skill-categories-section ol > .ember-view', nodes => {
+      const skills: Skill[] = await page.$$eval('.pv-skill-categories-section ol > .ember-view', (nodes) => {
         // Note: the $$eval context is the browser context.
         // So custom methods you define in this file are not available within this $$eval.
 
@@ -824,44 +850,47 @@ export class LinkedInProfileScraper {
           const endorsementCount = node.querySelector('.pv-skill-category-entity__endorsement-count');
 
           return {
-            skillName: (skillName) ? skillName.textContent?.trim() : null,
-            endorsementCount: (endorsementCount) ? parseInt(endorsementCount.textContent?.trim() || '0') : 0
+            skillName: skillName ? skillName.textContent?.trim() : null,
+            endorsementCount: endorsementCount ? parseInt(endorsementCount.textContent?.trim() || '0') : 0,
           } as Skill;
-        }) as Skill[]
+        }) as Skill[];
       });
 
-      statusLog(logSection, `Got skills data: ${JSON.stringify(skills)}`, scraperSessionId)
+      statusLog(logSection, `Got skills data: ${JSON.stringify(skills)}`, scraperSessionId);
 
-      statusLog(logSection, `Done! Returned profile details for: ${profileUrl}`, scraperSessionId)
+      statusLog(logSection, `Done! Returned profile details for: ${profileUrl}`, scraperSessionId);
 
-      if (!this.options.keepAlive) {
-        statusLog(logSection, 'Not keeping the session alive.')
-
-        await this.close(page)
-
-        statusLog(logSection, 'Done. Puppeteer is closed.')
-      } else {
-        statusLog(logSection, 'Done. Puppeteer is being kept alive in memory.')
-
-        // Only close the current page, we do not need it anymore
-        await page.close()
-      }
+      await this.handleClose(logSection, page);
 
       return {
         userProfile,
         experiences,
         education,
         volunteerExperiences,
-        skills
-      }
+        skills,
+      };
     } catch (err) {
-      // Kill Puppeteer
-      await this.close()
+      await this.handleClose(logSection, page);
 
-      statusLog(logSection, 'An error occurred during a run.')
+      statusLog(logSection, 'An error occurred during a run.');
 
       // Throw the error up, allowing the user to handle this error himself.
       throw err;
     }
-  }
+  };
+
+  private handleClose = async (logSection: string, page: Page) => {
+    if (!this.options.keepAlive) {
+      statusLog(logSection, 'Not keeping the session alive.');
+
+      await this.close(page);
+
+      statusLog(logSection, 'Done. Puppeteer is closed.');
+    } else {
+      statusLog(logSection, 'Done. Puppeteer is being kept alive in memory.');
+
+      // Only close the current page, we do not need it anymore
+      await page.close();
+    }
+  };
 }
