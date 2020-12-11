@@ -144,22 +144,27 @@ interface ScraperOptions {
 }
 
 async function autoScroll(page: Page) {
-  await page.evaluate(() => {
-    return new Promise((resolve, reject) => {
-      var totalHeight = 0;
-      var distance = 500;
-      var timer = setInterval(() => {
-        var scrollHeight = document.body.scrollHeight;
-        window.scrollBy(0, distance);
-        totalHeight += distance;
+  try {
+    await page.evaluate(() => {
+      return new Promise((resolve, reject) => {
+        var totalHeight = 0;
+        var distance = 500;
+        var timer = setInterval(() => {
+          var scrollHeight = document.body.scrollHeight;
+          window.scrollBy(0, distance);
+          totalHeight += distance;
 
-        if (totalHeight >= scrollHeight) {
-          clearInterval(timer);
-          resolve();
-        }
-      }, 100);
+          if (totalHeight >= scrollHeight) {
+            clearInterval(timer);
+            resolve();
+          }
+        }, 100);
+      });
     });
-  });
+  } catch (err) {
+    console.error('autoScroll fail!', err);
+    await autoScroll(page);
+  }
 }
 
 export class LinkedInProfileScraper {
@@ -301,8 +306,8 @@ export class LinkedInProfileScraper {
     try {
       // Use already open page
       // This makes sure we don't have an extra open tab consuming memory
-      const firstPage = (await this.browser.pages())[0];
-      await firstPage.close();
+      // const firstPage = (await this.browser.pages())[0];
+      // await firstPage.close();
 
       // Method to create a faster Page
       // From: https://github.com/shirshak55/scrapper-tools/blob/master/src/fastPage/index.ts#L113
